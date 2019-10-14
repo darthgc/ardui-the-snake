@@ -174,8 +174,8 @@ void setup() {
    we have to do a wakeup call
    */
   lc.shutdown(0,false);
-  /* Set the brightness to a medium values */
-  lc.setIntensity(0, 6);
+  /* Set the brightness to a minimum value */
+  lc.setIntensity(0, 1);
   /* and clear the display */
   lc.clearDisplay(0);
 
