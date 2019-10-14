@@ -40,6 +40,7 @@ LinkedList<Position> allPossiblePosition = LinkedList<Position>();
 
 bool hasLost = false;
 bool hasWon = false;
+bool isStartGame = true;
 
 void InitAvailablePositions() {
   for (int i = 0; i < 8; i++) {
@@ -210,29 +211,29 @@ void RestartGame() {
 void DisplayLose() {
   lc.clearDisplay(0);
 
-  lc.setLed(0, 1, 1, true);
-  lc.setLed(0, 2, 1, true);
-  lc.setLed(0, 3, 1, true);
-  lc.setLed(0, 4, 1, true);
-  lc.setLed(0, 5, 1, true);
-  lc.setLed(0, 6, 1, true);
-  
-  lc.setLed(0, 1, 2, true);
-  lc.setLed(0, 2, 2, true);
-  lc.setLed(0, 3, 2, true);
-  lc.setLed(0, 4, 2, true);
-  lc.setLed(0, 5, 2, true);
+  lc.setColumn(0, 1, B01111110);
+  lc.setColumn(0, 2, B01111100);
+  lc.setRow(0, 5, B00011110);
+  lc.setRow(0, 6, B00111110); 
+}
 
-  lc.setLed(0, 6, 2, true);
-  lc.setLed(0, 6, 3, true);
-  lc.setLed(0, 6, 4, true);
-  lc.setLed(0, 6, 5, true);
-  lc.setLed(0, 6, 6, true);
+void DisplayStartGame() {
+  lc.clearDisplay(0);
   
-  lc.setLed(0, 5, 3, true);
-  lc.setLed(0, 5, 4, true);
-  lc.setLed(0, 5, 5, true);
+  lc.setRow(0, 0, B11111111);
+  lc.setRow(0, 1, B11111111);
+
+  lc.setLed(0, 2, 0, true);
+  lc.setLed(0, 2, 1, true);
+
+  lc.setRow(0, 3, B11111111);
+  lc.setRow(0, 4, B11111111);
+
   lc.setLed(0, 5, 6, true);
+  lc.setLed(0, 5, 7, true);
+
+  lc.setRow(0, 6, B11111111);
+  lc.setRow(0, 7, B11111111);
 }
 
 void setup() {
@@ -257,7 +258,14 @@ void setup() {
 
 void loop() {
 
-  if (hasLost) {
+  if (isStartGame) {
+    DisplayStartGame();
+
+    if (digitalRead(RIGHT_BUTTON_PIN) == HIGH) {
+      isStartGame = false;
+    }
+  }
+  else if (hasLost) {
       DisplayLose();
 
       if (digitalRead(RIGHT_BUTTON_PIN) == HIGH) {
@@ -267,8 +275,6 @@ void loop() {
     delay(500);
 
     ReadControllerInput();
-
-    // TODO: add "menu" (i.e. wait for user input to start game)
 
     // TODO: the snake move forwards every tick
     // TODO: change tick to something more playable (not for debug purposes.)
