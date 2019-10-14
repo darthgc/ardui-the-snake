@@ -19,9 +19,6 @@ LedControl lc = LedControl(12, 11, 10, 1);
 LinkedList<int> snakeRows = LinkedList<int>();
 LinkedList<int> snakeColumns = LinkedList<int>();
 
-int extensionRow = 0;
-int extensionColumn = 0;
-
 class Position {
   public:
     Position() {
@@ -38,10 +35,8 @@ class Position {
     int column;
 };
 
-Position currentExtensiontPosition = Position();
+Position currentFoodPosition = Position();
 LinkedList<Position> allPossiblePosition = LinkedList<Position>();
-
-// TODO: need to find a good way to randomly add the extention on the board
 
 void InitAvailablePositions() {
   for (int i = 0; i < 8; i++) {
@@ -55,7 +50,7 @@ int compare(int *&a, int *&b) {
   return a < b;
 }
 
-void UpdateExtensionPosition() {
+void UpdateFoodPosition() {
   LinkedList<int> indexes = LinkedList<int>();
 
   for (int i = 0; i < snakeRows.size(); i++) {
@@ -80,22 +75,10 @@ void UpdateExtensionPosition() {
       firstIndexValue = indexes.get(firstIndex);
     }
   }
-  /*int firstIndex = 0;
-  int firstIndexValue = indexes.get(firstIndex);
-  for (int i = 0; i < 64; i++) {
-    Position p = allPossiblePosition.get(i);
 
-    if ((p.row * 8) + p.column != firstIndexValue ) {
-      remainingPositions.add(p);
-    } else {
-      firstIndex += 1;
-      firstIndexValue = indexes.get(firstIndex);
-    }
-  }*/
+  int foodPosition = /*rand()*/random(0, 64) % remainingPositions.size();
 
-  int extensionPosition = rand() % remainingPositions.size();
-
-  currentExtensiontPosition = remainingPositions.get(extensionPosition);
+  currentFoodPosition = remainingPositions.get(foodPosition);
 }
 
 void MoveSnake(int rowModification, int columnModification) {
@@ -134,19 +117,10 @@ void ReadControllerInput() {
   }
 }
 
-void VerifyExtension() {
-  // If extension eaten, add it, otherwise, do nothing
-  if (currentExtensiontPosition.row == snakeRows.get(snakeRows.size() - 1) && currentExtensiontPosition.column == snakeColumns.get(snakeColumns.size() - 1)) {
-    
-    /*// Add to snake
-    snakeRows.add(currentExtensiontPosition.row);
-    snakeColumns.add(currentExtensiontPosition.column);*/
-
-    // Add to the end of the snake
-    // TODO: will probably need some kind of direction flag, so that it is added at the correct place
-    // TODO: Not sure the linked list library provided supports adding an element anywhere ...
-
-    /*int lastRow = snakeRows.get(0);
+void VerifyFoodEaten() {
+  // If food eaten, add it to the end, in the correct direction, otherwise, do nothing
+  if (currentFoodPosition.row == snakeRows.get(snakeRows.size() - 1) && currentFoodPosition.column == snakeColumns.get(snakeColumns.size() - 1)) {
+    int lastRow = snakeRows.get(0);
     int lastColumn = snakeColumns.get(0);
     int secondRow = snakeRows.get(1);
     int secondColumn = snakeColumns.get(1);
@@ -171,10 +145,10 @@ void VerifyExtension() {
       }
     }
 
-    snakeRows.add(newRow);
-    snakeColumns.add(newColumn);*/
+    snakeRows.add(0, newRow);
+    snakeColumns.add(0, newColumn);
 
-    UpdateExtensionPosition();
+    UpdateFoodPosition();
   }
 }
 
@@ -184,13 +158,17 @@ void DisplaySnake() {
   }
 }
 
-void DisplayExtension() {
-  lc.setLed(0, currentExtensiontPosition.row, currentExtensiontPosition.column, true);
+void DisplayFood() {
+  lc.setLed(0, currentFoodPosition.row, currentFoodPosition.column, true);
 }
 
 void setup() {
   Serial.begin(SERIAL_8N1);
-
+  
+  // Initialize the pseudo-random generator with a non-connected pin (here 0, change if needed)
+  // https://www.arduino.cc/reference/en/language/functions/random-numbers/randomseed/
+  randomSeed(analogRead(0));
+  
   /*
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
@@ -218,21 +196,23 @@ void setup() {
 
   InitAvailablePositions();
 
-  UpdateExtensionPosition();
+  UpdateFoodPosition();
 }
 
 void loop() {
-  Serial.println("BOB");
   delay(500);
 
   ReadControllerInput();
 
   // TODO: verify collision (what ends the game) (if collision with tail (end of snake), you win!)
+  // TODO: the snake move forwards every tick
+  // TODO: change tick to somthing more playable (not for debug purposes.)
+  // TODO: packman effect? Or die over the edges?
 
-  VerifyExtension(); // TODO: better name
+  VerifyFoodEaten();
 
   // Update display
   lc.clearDisplay(0);
   DisplaySnake();
-  DisplayExtension();
+  DisplayFood();
 }
