@@ -38,6 +38,9 @@ class Position {
 Position currentFoodPosition = Position();
 LinkedList<Position> allPossiblePosition = LinkedList<Position>();
 
+bool hasLost = false;
+bool hasWon = false;
+
 void InitAvailablePositions() {
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
@@ -76,7 +79,7 @@ void UpdateFoodPosition() {
     }
   }
 
-  int foodPosition = /*rand()*/random(0, 64) % remainingPositions.size();
+  int foodPosition = random(0, 64) % remainingPositions.size();
 
   currentFoodPosition = remainingPositions.get(foodPosition);
 }
@@ -115,6 +118,27 @@ void ReadControllerInput() {
       MoveSnake(1, 0);
     }
   }
+}
+
+bool SnakeEatsHimself()
+{
+  // This is a very trivial way of doing it, it may not be super optimal when the snake is long
+  for (int i = 0; i < snakeRows.size(); i++) {
+    for (int j = 0; j < snakeRows.size(); j++) {
+      if (i != j) {
+        if (snakeRows.get(i) == snakeRows.get(j) && snakeColumns.get(i) == snakeColumns.get(j)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool SnakeEatsTail()
+{
+  // TODO:
+  return false;
 }
 
 void VerifyFoodEaten() {
@@ -162,6 +186,55 @@ void DisplayFood() {
   lc.setLed(0, currentFoodPosition.row, currentFoodPosition.column, true);
 }
 
+void InitSnake() {
+  snakeRows.add(0);
+  snakeRows.add(0);
+  snakeRows.add(0);
+
+  snakeColumns.add(0);
+  snakeColumns.add(1);
+  snakeColumns.add(2);
+
+  InitAvailablePositions();
+  UpdateFoodPosition();
+}
+
+void RestartGame() {
+  hasLost = false;
+  snakeRows.clear();
+  snakeColumns.clear();
+  allPossiblePosition.clear();
+  InitSnake();
+}
+
+void DisplayLose() {
+  lc.clearDisplay(0);
+
+  lc.setLed(0, 1, 1, true);
+  lc.setLed(0, 2, 1, true);
+  lc.setLed(0, 3, 1, true);
+  lc.setLed(0, 4, 1, true);
+  lc.setLed(0, 5, 1, true);
+  lc.setLed(0, 6, 1, true);
+  
+  lc.setLed(0, 1, 2, true);
+  lc.setLed(0, 2, 2, true);
+  lc.setLed(0, 3, 2, true);
+  lc.setLed(0, 4, 2, true);
+  lc.setLed(0, 5, 2, true);
+
+  lc.setLed(0, 6, 2, true);
+  lc.setLed(0, 6, 3, true);
+  lc.setLed(0, 6, 4, true);
+  lc.setLed(0, 6, 5, true);
+  lc.setLed(0, 6, 6, true);
+  
+  lc.setLed(0, 5, 3, true);
+  lc.setLed(0, 5, 4, true);
+  lc.setLed(0, 5, 5, true);
+  lc.setLed(0, 5, 6, true);
+}
+
 void setup() {
   Serial.begin(SERIAL_8N1);
   
@@ -173,46 +246,49 @@ void setup() {
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
    */
-  lc.shutdown(0,false);
+  lc.shutdown(0, false);
   /* Set the brightness to a minimum value */
   lc.setIntensity(0, 1);
   /* and clear the display */
   lc.clearDisplay(0);
 
-  /* Init buttons */
-  pinMode(LEFT_BUTTON_PIN, INPUT);
-  pinMode(RIGHT_BUTTON_PIN, INPUT);
-  pinMode(UP_BUTTON_PIN, INPUT);
-  pinMode(DOWN_BUTTON_PIN, INPUT);
-
-  /* Init snake */
-  snakeRows.add(0);
-  snakeRows.add(0);
-  snakeRows.add(0);
-
-  snakeColumns.add(0);
-  snakeColumns.add(1);
-  snakeColumns.add(2);
-
-  InitAvailablePositions();
-
-  UpdateFoodPosition();
+  InitSnake();
 }
 
 void loop() {
-  delay(500);
 
-  ReadControllerInput();
+  if (hasLost) {
+      DisplayLose();
 
-  // TODO: verify collision (what ends the game) (if collision with tail (end of snake), you win!)
-  // TODO: the snake move forwards every tick
-  // TODO: change tick to somthing more playable (not for debug purposes.)
-  // TODO: packman effect? Or die over the edges?
+      if (digitalRead(RIGHT_BUTTON_PIN) == HIGH) {
+        RestartGame();
+      }
+  } else {
+    delay(500);
 
-  VerifyFoodEaten();
+    ReadControllerInput();
 
-  // Update display
-  lc.clearDisplay(0);
-  DisplaySnake();
-  DisplayFood();
+    // TODO: add "menu" (i.e. wait for user input to start game)
+
+    // TODO: the snake move forwards every tick
+    // TODO: change tick to something more playable (not for debug purposes.)
+    // TODO: pacman effect? Or die over the edges?
+
+    if (SnakeEatsHimself())
+    {
+      hasLost = true;
+    }
+    if (SnakeEatsTail()) {
+      hasWon = true;
+      // TODO: add win animation
+      // TODO: wait for input and restart game
+    }
+
+    VerifyFoodEaten();
+
+    // Update display
+    lc.clearDisplay(0);
+    DisplaySnake();
+    DisplayFood();
+  }
 }
